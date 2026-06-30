@@ -162,104 +162,6 @@
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
 </style>
 </head>
-  <!-- ===== COMMENT WALL ===== -->
-<button id="cwToggle" aria-label="Open comment wall">💬<span id="cwBadge"></span></button>
-<div id="cwPanel" aria-hidden="true">
-  <div id="cwHead"><span>Comment wall ✨</span><button id="cwClose" aria-label="Close">✕</button></div>
-  <div id="cwList"></div>
-  <div id="cwInputRow"><input id="cwText" maxlength="280" placeholder="Say something funny…" /><button id="cwSend">Send</button></div>
-</div>
-<style>
-  #cwToggle{position:fixed;right:18px;bottom:18px;z-index:40;width:56px;height:56px;border-radius:50%;border:0;background:var(--pistachio-deep);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 8px 22px -6px rgba(58,42,32,.5);transition:.15s;}
-  #cwToggle:hover{filter:brightness(1.06);transform:translateY(-1px);}
-  #cwBadge{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--pink-pop);color:#fff;font-family:'Lato';font-size:.7rem;font-weight:900;line-height:20px;display:none;}
-  #cwBadge.show{display:block;}
-  #cwPanel{position:fixed;right:18px;bottom:84px;z-index:41;width:340px;max-width:calc(100vw - 36px);max-height:70vh;background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;transform:translateY(12px) scale(.98);opacity:0;pointer-events:none;transition:.18s;}
-  #cwPanel.open{transform:none;opacity:1;pointer-events:auto;}
-  #cwHead{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;font-family:'Fraunces',serif;font-size:1.05rem;border-bottom:1px solid var(--line);}
-  #cwHead button{border:0;background:transparent;font-size:1rem;color:var(--espresso-soft);cursor:pointer;}
-  #cwList{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px;}
-  #cwEmpty{color:var(--espresso-soft);font-size:.86rem;text-align:center;padding:24px 8px;font-style:italic;}
-  .cwItem{display:flex;gap:9px;align-items:flex-start;}
-  .cwAv{flex:none;width:28px;height:28px;border-radius:50%;color:#fff;font-family:'Lato';font-weight:900;font-size:.7rem;display:flex;align-items:center;justify-content:center;}
-  .cwBody{flex:1;min-width:0;}
-  .cwMeta{font-size:.74rem;color:var(--espresso-soft);}
-  .cwMeta b{color:var(--espresso);font-size:.82rem;}
-  .cwMsg{font-size:.92rem;word-wrap:break-word;}
-  .cwDel{border:0;background:transparent;color:var(--espresso-soft);cursor:pointer;font-size:.8rem;opacity:.45;padding:2px 4px;}
-  .cwDel:hover{opacity:1;color:var(--pink-pop);}
-  #cwInputRow{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);}
-  #cwText{flex:1;border:1.5px solid var(--line);border-radius:999px;padding:9px 13px;font:inherit;font-size:.9rem;}
-  #cwText:focus{outline:2px solid var(--pistachio);border-color:var(--pistachio);}
-  #cwSend{border:0;background:var(--pistachio-deep);color:#fff;font-family:'Lato';font-weight:700;border-radius:999px;padding:0 16px;cursor:pointer;font-size:.88rem;}
-  @media (max-width:480px){#cwPanel{right:10px;left:10px;width:auto;bottom:80px;}#cwToggle{right:14px;bottom:14px;}}
-</style>
-<script type="module">
-(async()=>{
-  const PALETTE=['#7E9A5E','#E29AA3','#88B2D6','#C9A24B','#A98BC4','#5FAE9A','#D98B5E','#C76B7E'];
-  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const initials=n=>{const p=(n||'').trim().split(/\s+/).filter(Boolean);if(!p.length)return'?';return p.length===1?p[0].slice(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();};
-  const colorFor=id=>{let h=0;for(const c of (id||''))h=(h*31+c.charCodeAt(0))>>>0;return PALETTE[h%PALETTE.length];};
-  const getName=()=>localStorage.getItem('bk_voterName');
-  const getId=()=>localStorage.getItem('bk_voterId')||'anon';
-  const ADMIN_CODE='mod'; // ← change to any secret word; visit your link with #yourword to moderate
-  const isAdmin=()=>location.hash.replace('#','')===ADMIN_CODE;
-  let cstore;
-  try{
-    const {getApps}=await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
-    for(let i=0;i<40&&getApps().length===0;i++)await new Promise(r=>setTimeout(r,50));
-    if(getApps().length){
-      const app=getApps()[0];
-      const {getFirestore,collection,addDoc,deleteDoc,doc,onSnapshot,query,orderBy}=await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-      const db=getFirestore(app),col=collection(db,'comments');
-      cstore={add:c=>addDoc(col,c),del:id=>deleteDoc(doc(col,id)),subscribe:cb=>onSnapshot(query(col,orderBy('createdAt','asc')),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))))};
-    }
-  }catch(e){}
-  if(!cstore){
-    const KEY='babyKerawalaComments';
-    const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}};
-    let subs=[];const emit=()=>{const a=read();subs.forEach(cb=>cb(a))};
-    window.addEventListener('storage',emit);
-    cstore={add:c=>{const a=read();a.push({id:'c'+Date.now()+Math.random().toString(16).slice(2),...c});localStorage.setItem(KEY,JSON.stringify(a));emit();return Promise.resolve();},del:id=>{localStorage.setItem(KEY,JSON.stringify(read().filter(x=>x.id!==id)));emit();return Promise.resolve();},subscribe:cb=>{subs.push(cb);emit();}};
-  }
-  const $=s=>document.querySelector(s);
-  const panel=$('#cwPanel'),toggle=$('#cwToggle'),list=$('#cwList'),badge=$('#cwBadge');
-  let comments=[],open=false;
-  const seenKey='bk_cwSeen';
-  const ago=t=>{const s=Math.floor((Date.now()-t)/1000);if(s<60)return'just now';const m=Math.floor(s/60);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';};
-  function render(){
-    if(!comments.length){list.innerHTML='<div id="cwEmpty">No comments yet — break the ice! 🎉</div>';return;}
-    const me=getId(),admin=isAdmin();
-    list.innerHTML=comments.map(c=>{
-      const canDel=admin||c.authorId===me;
-      return `<div class="cwItem"><div class="cwAv" style="background:${c.color||'#9CB380'}">${esc(c.initials||initials(c.name))}</div><div class="cwBody"><div class="cwMeta"><b>${esc(c.name||'Someone')}</b> · ${ago(c.createdAt||Date.now())}</div><div class="cwMsg">${esc(c.text||'')}</div></div>${canDel?`<button class="cwDel" data-id="${c.id}" title="Delete">✕</button>`:''}</div>`;
-    }).join('');
-    list.querySelectorAll('.cwDel').forEach(b=>b.addEventListener('click',()=>{if(confirm('Delete this comment?'))cstore.del(b.dataset.id);}));
-    if(open)list.scrollTop=list.scrollHeight;
-  }
-  function updateBadge(){
-    const seen=parseInt(localStorage.getItem(seenKey)||'0',10);
-    const unread=comments.length-seen;
-    if(!open&&unread>0){badge.textContent=unread>9?'9+':unread;badge.classList.add('show');}
-    else badge.classList.remove('show');
-  }
-  cstore.subscribe(c=>{comments=c;render();updateBadge();});
-  function openPanel(){open=true;panel.classList.add('open');panel.setAttribute('aria-hidden','false');localStorage.setItem(seenKey,String(comments.length));updateBadge();render();setTimeout(()=>$('#cwText').focus(),60);}
-  function closePanel(){open=false;panel.classList.remove('open');panel.setAttribute('aria-hidden','true');}
-  toggle.addEventListener('click',()=>open?closePanel():openPanel());
-  $('#cwClose').addEventListener('click',closePanel);
-  window.addEventListener('hashchange',render);
-  function send(){
-    const t=$('#cwText').value.trim();if(!t)return;
-    const name=getName();
-    if(!name){alert('Add your name on the guesses tab first, then come back to comment!');return;}
-    cstore.add({name,initials:initials(name),color:colorFor(getId()),authorId:getId(),text:t,createdAt:Date.now()});
-    $('#cwText').value='';
-  }
-  $('#cwSend').addEventListener('click',send);
-  $('#cwText').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
-})();
-</script>
 <body>
 
 <!-- ============== NAME GATE ============== -->
@@ -304,7 +206,107 @@
     <div class="legend" id="legend"></div>
     <div id="charts"></div>
   </section>
-
+<!-- ===== COMMENT WALL (inline) ===== -->
+<section id="cwSection">
+  <div class="cw-head-row">
+    <h2 class="cw-title">💬 The family chat</h2>
+    <span class="cw-count" id="cwCount"></span>
+  </div>
+  <p class="cw-sub">Predictions, jokes, hot takes — leave whatever. Everyone sees it live.</p>
+  <div class="cw-composer">
+    <div class="cw-myav" id="cwMyAv">?</div>
+    <div class="cw-composer-main">
+      <textarea id="cwText" maxlength="280" rows="2" placeholder="Say something funny…"></textarea>
+      <div class="cw-composer-actions"><span class="cw-hint" id="cwHint"></span><button id="cwSend">Post comment</button></div>
+    </div>
+  </div>
+  <div id="cwList"></div>
+</section>
+<style>
+  #cwSection{margin:34px 0 8px;padding-top:26px;border-top:1px solid var(--line);}
+  .cw-head-row{display:flex;align-items:baseline;gap:10px;}
+  .cw-title{font-family:'Fraunces',serif;font-weight:500;font-size:1.3rem;margin:0;}
+  .cw-count{font-size:.82rem;color:var(--espresso-soft);font-weight:700;}
+  .cw-sub{color:var(--espresso-soft);font-size:.9rem;margin:4px 0 16px;}
+  .cw-composer{display:flex;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow);}
+  .cw-myav{flex:none;width:34px;height:34px;border-radius:50%;background:#cbb9a8;color:#fff;font-family:'Lato';font-weight:900;font-size:.78rem;display:flex;align-items:center;justify-content:center;}
+  .cw-composer-main{flex:1;min-width:0;}
+  #cwText{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:.95rem;resize:vertical;min-height:46px;background:#fff;}
+  #cwText:focus{outline:2px solid var(--pistachio);border-color:var(--pistachio);}
+  .cw-composer-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;}
+  .cw-hint{font-size:.78rem;color:var(--espresso-soft);}
+  #cwSend{border:0;background:var(--pistachio-deep);color:#fff;font-family:'Lato';font-weight:700;border-radius:999px;padding:9px 18px;cursor:pointer;font-size:.88rem;}
+  #cwSend:hover{filter:brightness(1.05);}
+  #cwList{display:flex;flex-direction:column;gap:16px;margin-top:20px;}
+  #cwEmpty{color:var(--espresso-soft);font-size:.88rem;text-align:center;padding:22px 8px;font-style:italic;}
+  .cwItem{display:flex;gap:11px;align-items:flex-start;}
+  .cwAv{flex:none;width:32px;height:32px;border-radius:50%;color:#fff;font-family:'Lato';font-weight:900;font-size:.74rem;display:flex;align-items:center;justify-content:center;}
+  .cwBody{flex:1;min-width:0;}
+  .cwMeta{font-size:.76rem;color:var(--espresso-soft);margin-bottom:1px;}
+  .cwMeta b{color:var(--espresso);font-size:.9rem;}
+  .cwMsg{font-size:.96rem;word-wrap:break-word;}
+  .cwDel{border:0;background:transparent;color:var(--espresso-soft);cursor:pointer;font-size:.82rem;opacity:.4;padding:2px 5px;}
+  .cwDel:hover{opacity:1;color:var(--pink-pop);}
+</style>
+<script type="module">
+(async()=>{
+  const PALETTE=['#7E9A5E','#E29AA3','#88B2D6','#C9A24B','#A98BC4','#5FAE9A','#D98B5E','#C76B7E'];
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const initials=n=>{const p=(n||'').trim().split(/\s+/).filter(Boolean);if(!p.length)return'?';return p.length===1?p[0].slice(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();};
+  const colorFor=id=>{let h=0;for(const c of (id||''))h=(h*31+c.charCodeAt(0))>>>0;return PALETTE[h%PALETTE.length];};
+  const getName=()=>localStorage.getItem('bk_voterName');
+  const getId=()=>localStorage.getItem('bk_voterId')||'anon';
+  const ADMIN_CODE='mod'; // ← change to any secret word; visit your link with #yourword to moderate
+  const isAdmin=()=>location.hash.replace('#','')===ADMIN_CODE;
+  let cstore;
+  try{
+    const {getApps}=await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
+    for(let i=0;i<40&&getApps().length===0;i++)await new Promise(r=>setTimeout(r,50));
+    if(getApps().length){
+      const app=getApps()[0];
+      const {getFirestore,collection,addDoc,deleteDoc,doc,onSnapshot,query,orderBy}=await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+      const db=getFirestore(app),col=collection(db,'comments');
+      cstore={add:c=>addDoc(col,c),del:id=>deleteDoc(doc(col,id)),subscribe:cb=>onSnapshot(query(col,orderBy('createdAt','asc')),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))))};
+    }
+  }catch(e){}
+  if(!cstore){
+    const KEY='babyKerawalaComments';
+    const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}};
+    let subs=[];const emit=()=>{const a=read();subs.forEach(cb=>cb(a))};
+    window.addEventListener('storage',emit);
+    cstore={add:c=>{const a=read();a.push({id:'c'+Date.now()+Math.random().toString(16).slice(2),...c});localStorage.setItem(KEY,JSON.stringify(a));emit();return Promise.resolve();},del:id=>{localStorage.setItem(KEY,JSON.stringify(read().filter(x=>x.id!==id)));emit();return Promise.resolve();},subscribe:cb=>{subs.push(cb);emit();}};
+  }
+  const $=s=>document.querySelector(s);
+  const list=$('#cwList'),countEl=$('#cwCount'),myAv=$('#cwMyAv'),hint=$('#cwHint');
+  let comments=[];
+  const ago=t=>{const s=Math.floor((Date.now()-t)/1000);if(s<60)return'just now';const m=Math.floor(s/60);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';};
+  function refreshMe(){const n=getName();if(n){myAv.textContent=initials(n);myAv.style.background=colorFor(getId());hint.textContent='';}else{myAv.textContent='?';myAv.style.background='#cbb9a8';hint.textContent='Add your name on the guesses tab to post.';}}
+  function render(){
+    countEl.textContent=comments.length?`${comments.length} comment${comments.length>1?'s':''}`:'';
+    if(!comments.length){list.innerHTML='<div id="cwEmpty">No comments yet — break the ice! 🎉</div>';return;}
+    const me=getId(),admin=isAdmin();
+    const ordered=[...comments].reverse();
+    list.innerHTML=ordered.map(c=>{
+      const canDel=admin||c.authorId===me;
+      return `<div class="cwItem"><div class="cwAv" style="background:${c.color||'#9CB380'}">${esc(c.initials||initials(c.name))}</div><div class="cwBody"><div class="cwMeta"><b>${esc(c.name||'Someone')}</b> · ${ago(c.createdAt||Date.now())}</div><div class="cwMsg">${esc(c.text||'')}</div></div>${canDel?`<button class="cwDel" data-id="${c.id}" title="Delete">✕</button>`:''}</div>`;
+    }).join('');
+    list.querySelectorAll('.cwDel').forEach(b=>b.addEventListener('click',()=>{if(confirm('Delete this comment?'))cstore.del(b.dataset.id);}));
+  }
+  cstore.subscribe(c=>{comments=c;render();refreshMe();});
+  refreshMe();
+  window.addEventListener('hashchange',render);
+  $('#cwText').addEventListener('focus',refreshMe);
+  function send(){
+    const ta=$('#cwText'),t=ta.value.trim();if(!t)return;
+    const name=getName();
+    if(!name){alert('Add your name on the guesses tab first, then come back to comment!');return;}
+    cstore.add({name,initials:initials(name),color:colorFor(getId()),authorId:getId(),text:t,createdAt:Date.now()});
+    ta.value='';ta.focus();
+  }
+  $('#cwSend').addEventListener('click',send);
+  $('#cwText').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')send();});
+})();
+</script>
   <div class="ident" id="identLine"></div>
 </div>
 
