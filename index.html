@@ -317,7 +317,10 @@
    Firebase project (Project settings → Your apps → Web app).
    Until you do, the app runs in local "preview mode".
    ============================================================ */
+const PEEK = ['#peek','#mod'].includes((location.hash||'').toLowerCase());
+if (PEEK){ const g = document.getElementById('gate'); if (g) g.style.display = 'none'; }
 const firebaseConfig = {
+  const firebaseConfig = {
   apiKey:           "AIzaSyDH5hJXOlnD3oHycOQW8L2P1aVpg4Ccenk",
   authDomain:       "baby-kerawala.firebaseapp.com",
   projectId:        "baby-kerawala",
@@ -424,7 +427,6 @@ function renderIdent(){
   const r = document.getElementById('resetMe');
   if (r) r.addEventListener('click', () => { localStorage.removeItem('bk_voterId'); localStorage.removeItem('bk_voterName'); voterId=null; voterName=null; renderIdent(); openGate(); });
 }
-const PEEK = ['#peek','#mod'].includes(location.hash);
 if (PEEK){ closeGate(); renderIdent(); }
 else if (!voterName) openGate(); else renderIdent();
 
