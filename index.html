@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Baby Kerawala is a…?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+
+<!-- Charts, Excel export, and word cloud (loaded from public CDNs, run in the visitor's browser) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.3/src/wordcloud2.js"></script>
+
+<style>
+  :root{
+    --cream:        #FBF7EE;
+    --paper:        #FFFDF8;
+    --espresso:     #3A2A20;
+    --espresso-soft:#6B5648;
+    --pistachio:    #9CB380;
+    --pistachio-deep:#7E9A5E;
+    --pink:         #F3CBD0;
+    --pink-pop:     #E29AA3;
+    --blue:         #BBD4E8;
+    --blue-pop:     #88B2D6;
+    --line:         #ECE3D2;
+    --shadow:       0 1px 2px rgba(58,42,32,.04), 0 12px 28px -12px rgba(58,42,32,.18);
+    --radius:       18px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0;
+    font-family:'Lato', system-ui, sans-serif;
+    color:var(--espresso);
+    background:
+      radial-gradient(1200px 600px at 12% -10%, #fff6f1 0%, transparent 55%),
+      radial-gradient(1100px 600px at 92% -8%, #eef5f7 0%, transparent 55%),
+      var(--cream);
+    line-height:1.5;
+    min-height:100vh;
+  }
+  a{ color:inherit; }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:28px 20px 80px; }
+
+  /* ---------- Header ---------- */
+  header.masthead{ text-align:center; padding:14px 0 6px; }
+  .eyebrow{
+    font-size:.72rem; letter-spacing:.32em; text-transform:uppercase;
+    color:var(--pistachio-deep); font-weight:700; margin-bottom:10px;
+  }
+  h1.title{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:500; font-size:clamp(2rem, 7vw, 3.1rem);
+    line-height:1.05; margin:0; letter-spacing:-.01em;
+  }
+  h1.title .q{
+    background:linear-gradient(120deg, var(--pink-pop), var(--blue-pop));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-style:italic;
+  }
+  .subtitle{ color:var(--espresso-soft); margin:12px auto 0; max-width:440px; font-size:1rem; }
+  .duo-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:middle; margin:0 4px; }
+  .duo-dot.pink{ background:var(--pink-pop); } .duo-dot.blue{ background:var(--blue-pop); }
+
+  /* ---------- Tabs ---------- */
+  .tabs{ display:flex; gap:6px; background:var(--paper); border:1px solid var(--line);
+    border-radius:999px; padding:5px; margin:26px auto 8px; width:max-content; box-shadow:var(--shadow); }
+  .tab{ border:0; background:transparent; font-family:'Lato'; font-weight:700; font-size:.92rem;
+    color:var(--espresso-soft); padding:9px 20px; border-radius:999px; cursor:pointer; transition:.18s; }
+  .tab[aria-selected="true"]{ background:var(--pistachio); color:#fff; }
+  .tab:focus-visible{ outline:2px solid var(--pistachio-deep); outline-offset:2px; }
+
+  .counter{ text-align:center; color:var(--espresso-soft); font-size:.86rem; margin:4px 0 18px; }
+  .counter b{ color:var(--espresso); }
+
+  /* ---------- Cards ---------- */
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:22px 22px 20px; margin:16px 0; }
+  .qhead{ display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+  .qhead .emoji{ font-size:1.45rem; line-height:1; }
+  .qhead h2{ font-family:'Fraunces',serif; font-weight:500; font-size:1.22rem; margin:0; }
+  .qhead .note{ font-size:.82rem; color:var(--espresso-soft); font-weight:400; }
+
+  .options{ display:flex; flex-direction:column; gap:9px; }
+  .opt{ display:flex; flex-direction:column; gap:8px; border:1.5px solid var(--line);
+    border-radius:14px; padding:12px 14px; background:#fff; cursor:pointer; transition:.16s;
+    text-align:left; font:inherit; color:inherit; }
+  .opt:hover{ border-color:var(--pistachio); background:#fcfdfa; }
+  .opt:focus-visible{ outline:2px solid var(--pistachio-deep); outline-offset:1px; }
+  .opt.chosen{ border-color:var(--pistachio-deep); background:#f3f7ec;
+    box-shadow:inset 0 0 0 1px var(--pistachio-deep); }
+  .opt-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .opt-label{ font-weight:700; font-size:.98rem; }
+  .opt.chosen .opt-label::after{ content:" ✓"; color:var(--pistachio-deep); }
+  .count-pill{ font-size:.74rem; font-weight:700; color:var(--espresso-soft);
+    background:var(--cream); border:1px solid var(--line); border-radius:999px; padding:2px 9px; min-width:26px; text-align:center; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .chip{ font-size:.66rem; font-weight:900; letter-spacing:.02em; color:#fff;
+    border-radius:999px; padding:3px 7px; line-height:1; cursor:default; }
+  .chips:empty{ display:none; }
+
+  textarea.namebox{ width:100%; border:1.5px solid var(--line); border-radius:14px; padding:12px 14px;
+    font:inherit; resize:vertical; min-height:52px; background:#fff; }
+  textarea.namebox:focus{ outline:2px solid var(--pistachio); outline-offset:1px; border-color:var(--pistachio); }
+
+  .saved-flag{ font-size:.78rem; color:var(--pistachio-deep); font-weight:700; opacity:0; transition:.3s; }
+  .saved-flag.show{ opacity:1; }
+
+  /* ---------- Results ---------- */
+  .legend{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:0 0 18px; }
+  .legend .chip{ cursor:default; }
+  .legend .who{ color:var(--espresso); font-weight:700; }
+  .chart-card h2{ font-family:'Fraunces',serif; font-weight:500; font-size:1.15rem; margin:0 0 4px; }
+  .chart-card .emoji{ margin-right:6px; }
+  .chart-wrap{ position:relative; height:240px; margin-top:10px; }
+  .names-under{ font-size:.8rem; color:var(--espresso-soft); margin-top:12px; }
+  .names-under b{ color:var(--espresso); }
+  #wordcloud{ width:100%; height:260px; }
+  .suggestion-list{ list-style:none; padding:0; margin:14px 0 0; display:flex; flex-direction:column; gap:6px; }
+  .suggestion-list li{ display:flex; justify-content:space-between; gap:10px; font-size:.9rem;
+    border-bottom:1px dashed var(--line); padding-bottom:6px; }
+  .suggestion-list .by{ color:var(--espresso-soft); }
+
+  .toolbar{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:8px 0 22px; }
+  .btn{ font-family:'Lato'; font-weight:700; border-radius:999px; padding:11px 20px; cursor:pointer;
+    border:1.5px solid var(--pistachio-deep); background:var(--pistachio-deep); color:#fff; transition:.16s; font-size:.92rem; }
+  .btn:hover{ filter:brightness(1.05); }
+  .btn.ghost{ background:#fff; color:var(--espresso); border-color:var(--line); }
+  .btn:focus-visible{ outline:2px solid var(--espresso); outline-offset:2px; }
+
+  .empty{ text-align:center; color:var(--espresso-soft); padding:40px 10px; }
+
+  /* ---------- Name gate ---------- */
+  .gate{ position:fixed; inset:0; background:rgba(58,42,32,.34); backdrop-filter:blur(3px);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .gate-card{ background:var(--paper); border-radius:22px; box-shadow:var(--shadow); padding:30px 26px;
+    max-width:400px; width:100%; text-align:center; }
+  .gate-card h2{ font-family:'Fraunces',serif; font-weight:500; margin:6px 0 6px; font-size:1.5rem; }
+  .gate-card p{ color:var(--espresso-soft); margin:0 0 18px; font-size:.94rem; }
+  .gate-card input{ width:100%; border:1.5px solid var(--line); border-radius:14px; padding:13px 14px;
+    font:inherit; text-align:center; font-size:1.05rem; margin-bottom:14px; }
+  .gate-card input:focus{ outline:2px solid var(--pistachio); border-color:var(--pistachio); }
+
+  .ident{ text-align:center; font-size:.82rem; color:var(--espresso-soft); margin-top:26px; }
+  .ident a{ color:var(--pistachio-deep); font-weight:700; cursor:pointer; text-decoration:none; }
+
+  .banner{ background:#fff6e8; border:1px solid #f0dcae; color:#7a5a1e; border-radius:14px;
+    padding:10px 14px; font-size:.84rem; text-align:center; margin:0 0 14px; }
+
+  .hidden{ display:none !important; }
+
+  @media (max-width:480px){
+    .wrap{ padding:18px 14px 70px; }
+    .card{ padding:18px 16px; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ============== NAME GATE ============== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div style="font-size:2rem">👶</div>
+    <h2>Baby Kerawala is a…?</h2>
+    <p>First — who's guessing? Your name shows up next to your picks so everyone can see who said what.</p>
+    <input id="nameInput" type="text" placeholder="Your name" autocomplete="name" />
+    <button class="btn" id="nameGo" style="width:100%">Start guessing</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">A family prediction pool</div>
+    <h1 class="title">Baby Kerawala is a<span class="q">…?</span></h1>
+    <p class="subtitle">
+      Due <b>July 13th</b>. We're keeping the gender a surprise
+      <span class="duo-dot pink"></span><span class="duo-dot blue"></span>
+      so take your best guesses. Get them in before baby arrives — late guesses don't count!
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-vote" role="tab" aria-selected="true" aria-controls="view-vote">Make your guesses</button>
+    <button class="tab" id="tab-results" role="tab" aria-selected="false" aria-controls="view-results">See results</button>
+  </div>
+  <div class="counter"><b id="voterCount">0</b> <span id="voterWord">guesses</span> so far</div>
+
+  <div id="demoBanner" class="banner hidden">
+    Preview mode — guesses are only saved on this device. Add your Firebase keys (see the README) to make it live for the whole family.
+  </div>
+
+  <!-- ============== VOTE VIEW ============== -->
+  <main id="view-vote" role="tabpanel"></main>
+
+  <!-- ============== RESULTS VIEW ============== -->
+  <section id="view-results" role="tabpanel" class="hidden">
+    <div class="toolbar">
+      <button class="btn" id="exportBtn">⬇︎ Export all guesses to Excel</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div id="charts"></div>
+  </section>
+
+  <div class="ident" id="identLine"></div>
+</div>
+
+<script type="module">
+/* ============================================================
+   1) FIREBASE CONFIG  ←←←  PASTE YOUR KEYS HERE
+   Replace the placeholder values with the config from your own
+   Firebase project (Project settings → Your apps → Web app).
+   Until you do, the app runs in local "preview mode".
+   ============================================================ */
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+/* ============================================================
+   2) QUESTIONS  (edit option text here anytime)
+   ============================================================ */
+const QUESTIONS = [
+  { key:'gender',    emoji:'👫', label:'Is baby a…',
+    options:['Boy','Girl'] },
+  { key:'dueDate',   emoji:'🎂', label:'Baby will be born…', note:'(due date July 13th)',
+    options:['1+ wk early','1–6 days early','Right on time','1–6 days late','1+ wk late'] },
+  { key:'eyes',      emoji:'👀', label:"Baby's eyes will be…",
+    options:['Brown','Blue','Green'] },
+  { key:'birthTime', emoji:'⌚️', label:'Baby will be born…',
+    options:['Early morning (12–6am)','Morning (6am–12pm)','Afternoon (12–6pm)','Late (6pm–12am)'] },
+  { key:'height',    emoji:'📏', label:'How tall will baby be?',
+    options:['18 in or under','18.1–19 in','19.1–20 in','20.1–21 in','21.1+ in'] },
+  { key:'weight',    emoji:'⚖️', label:'How much will baby weigh?',
+    options:['Under 5 lb','5–5.5 lb','5.6–6 lb','6.1–6.5 lb','6.6–7 lb','7.1–7.5 lb','7.6–8 lb','8.1–8.5 lb','8.5 lb+'] },
+  { key:'hair',      emoji:'👩‍🦲', label:'Baby will be born with…',
+    options:['Lots of hair','Mid amount','Bald'] },
+  { key:'nameSuggestion', emoji:'✨', label:"Best name suggestion — maybe we'll use it?!",
+    note:'Just for fun, not scored', type:'text' },
+];
+
+const CHART_TYPE = {            // how each results chart renders
+  gender:'pie', eyes:'bar', hair:'bar',
+  dueDate:'cluster', height:'cluster', weight:'cluster', birthTime:'cluster',
+  nameSuggestion:'cloud'
+};
+
+const PALETTE = ['#7E9A5E','#E29AA3','#88B2D6','#C9A24B','#A98BC4','#5FAE9A','#D98B5E','#C76B7E'];
+
+/* ============================================================
+   3) DATA LAYER  — Firebase if configured, else local preview
+   ============================================================ */
+const isLive = !firebaseConfig.projectId.startsWith('YOUR_');
+let store;
+
+if (isLive) {
+  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
+  const { getFirestore, collection, doc, setDoc, onSnapshot } =
+    await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+  const db = getFirestore(initializeApp(firebaseConfig));
+  const col = collection(db, 'votes');
+  store = {
+    save: (id, patch) => setDoc(doc(col, id), patch, { merge:true }),
+    subscribe: (cb) => onSnapshot(col, snap => cb(snap.docs.map(d => ({ id:d.id, ...d.data() }))))
+  };
+} else {
+  document.getElementById('demoBanner').classList.remove('hidden');
+  const KEY = 'babyKerawalaPreview';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+  let listeners = [];
+  const emit = () => { const arr = Object.entries(read()).map(([id,v]) => ({ id, ...v })); listeners.forEach(cb => cb(arr)); };
+  window.addEventListener('storage', emit);
+  store = {
+    save: (id, patch) => { const all = read(); all[id] = { ...(all[id]||{}), ...patch }; localStorage.setItem(KEY, JSON.stringify(all)); emit(); return Promise.resolve(); },
+    subscribe: (cb) => { listeners.push(cb); emit(); return () => {}; }
+  };
+}
+
+/* ============================================================
+   4) IDENTITY
+   ============================================================ */
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2));
+const initialsOf = (name) => {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return '?';
+  if (p.length === 1) return p[0].slice(0,2).toUpperCase();
+  return (p[0][0] + p[p.length-1][0]).toUpperCase();
+};
+const colorFor = (id) => { let h=0; for (const c of id) h=(h*31+c.charCodeAt(0))>>>0; return PALETTE[h % PALETTE.length]; };
+
+let voterId   = localStorage.getItem('bk_voterId');
+let voterName = localStorage.getItem('bk_voterName');
+
+const gate = document.getElementById('gate');
+function openGate(){ gate.style.display='flex'; setTimeout(()=>document.getElementById('nameInput').focus(),50); }
+function closeGate(){ gate.style.display='none'; }
+
+document.getElementById('nameGo').addEventListener('click', submitName);
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key==='Enter') submitName(); });
+function submitName(){
+  const v = document.getElementById('nameInput').value.trim();
+  if (!v) { document.getElementById('nameInput').focus(); return; }
+  if (!voterId) voterId = uuid();
+  voterName = v;
+  localStorage.setItem('bk_voterId', voterId);
+  localStorage.setItem('bk_voterName', voterName);
+  store.save(voterId, { name:voterName, initials:initialsOf(voterName), color:colorFor(voterId), updatedAt:Date.now() });
+  closeGate();
+  renderIdent();
+}
+function renderIdent(){
+  const el = document.getElementById('identLine');
+  if (voterName) el.innerHTML = `Guessing as <b>${escapeHtml(voterName)}</b> · <a id="resetMe">not you?</a>`;
+  const r = document.getElementById('resetMe');
+  if (r) r.addEventListener('click', () => { localStorage.removeItem('bk_voterId'); localStorage.removeItem('bk_voterName'); voterId=null; voterName=null; renderIdent(); openGate(); });
+}
+if (!voterName) openGate(); else renderIdent();
+
+/* ============================================================
+   5) BUILD THE VOTE FORM
+   ============================================================ */
+const voteView = document.getElementById('view-vote');
+const myAnswer = {};   // local cache of this person's picks
+
+for (const q of QUESTIONS) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="qhead"><span class="emoji">${q.emoji}</span>
+    <h2>${escapeHtml(q.label)} ${q.note?`<span class="note">${escapeHtml(q.note)}</span>`:''}</h2></div>`;
+
+  if (q.type === 'text') {
+    const ta = document.createElement('textarea');
+    ta.className = 'namebox'; ta.placeholder = 'Type a name…';
+    const flag = document.createElement('div'); flag.className='saved-flag'; flag.textContent='Saved ✓';
+    let t;
+    ta.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => { ensureNamed(() => { myAnswer.nameSuggestion = ta.value.trim(); persist('nameSuggestion', ta.value.trim()); flag.classList.add('show'); setTimeout(()=>flag.classList.remove('show'),1200); }); }, 500);
+    });
+    card.appendChild(ta); card.appendChild(flag);
+    card.dataset.text = '1';
+  } else {
+    const wrap = document.createElement('div'); wrap.className='options';
+    for (const opt of q.options) {
+      const b = document.createElement('button');
+      b.className='opt'; b.type='button'; b.dataset.value=opt;
+      b.innerHTML = `<div class="opt-row"><span class="opt-label">${escapeHtml(opt)}</span>
+        <span class="count-pill" data-count>0</span></div><div class="chips" data-chips></div>`;
+      b.addEventListener('click', () => ensureNamed(() => {
+        myAnswer[q.key] = opt; persist(q.key, opt);
+        wrap.querySelectorAll('.opt').forEach(o=>o.classList.toggle('chosen', o.dataset.value===opt));
+      }));
+      wrap.appendChild(b);
+    }
+    card.appendChild(wrap);
+  }
+  card.dataset.key = q.key;
+  voteView.appendChild(card);
+}
+
+function ensureNamed(fn){ if (!voterName){ openGate(); return; } fn(); }
+function persist(key, value){ if (!voterId) return; store.save(voterId, { name:voterName, initials:initialsOf(voterName), color:colorFor(voterId), [key]:value, updatedAt:Date.now() }); }
+
+/* ============================================================
+   6) LIVE UPDATES
+   ============================================================ */
+let allVotes = [];
+store.subscribe(votes => {
+  allVotes = votes;
+  // count = people who have at least one answer (or a name)
+  const participants = votes.filter(v => v.name);
+  const countEl = document.getElementById('voterCount');
+  countEl.textContent = participants.length;
+  document.getElementById('voterWord').textContent = participants.length===1 ? 'guesser' : 'guessers';
+  updateTallies();
+  reflectMyPicks();
+  if (!document.getElementById('view-results').classList.contains('hidden')) renderResults();
+});
+
+function reflectMyPicks(){
+  const me = allVotes.find(v => v.id===voterId);
+  if (!me) return;
+  for (const q of QUESTIONS){
+    if (q.type==='text'){
+      const ta = voteView.querySelector(`[data-key="${q.key}"] textarea`);
+      if (ta && document.activeElement!==ta && me.nameSuggestion && !ta.value) ta.value = me.nameSuggestion;
+    } else if (me[q.key]) {
+      voteView.querySelectorAll(`[data-key="${q.key}"] .opt`).forEach(o=>o.classList.toggle('chosen', o.dataset.value===me[q.key]));
+    }
+  }
+}
+
+function updateTallies(){
+  for (const q of QUESTIONS){
+    if (q.type==='text') continue;
+    const card = voteView.querySelector(`[data-key="${q.key}"]`);
+    card.querySelectorAll('.opt').forEach(optEl => {
+      const val = optEl.dataset.value;
+      const voters = allVotes.filter(v => v[q.key]===val);
+      optEl.querySelector('[data-count]').textContent = voters.length;
+      const chips = optEl.querySelector('[data-chips]');
+      chips.innerHTML = voters.map(v =>
+        `<span class="chip" style="background:${v.color||'#9CB380'}" title="${escapeHtml(v.name||'')}">${escapeHtml(v.initials||initialsOf(v.name||'?'))}</span>`
+      ).join('');
+    });
+  }
+}
+
+/* ============================================================
+   7) TABS
+   ============================================================ */
+const tabVote = document.getElementById('tab-vote');
+const tabRes  = document.getElementById('tab-results');
+tabVote.addEventListener('click', () => switchTab('vote'));
+tabRes.addEventListener('click', () => switchTab('results'));
+function switchTab(which){
+  const onRes = which==='results';
+  tabRes.setAttribute('aria-selected', onRes); tabVote.setAttribute('aria-selected', !onRes);
+  document.getElementById('view-results').classList.toggle('hidden', !onRes);
+  document.getElementById('view-vote').classList.toggle('hidden', onRes);
+  if (onRes) renderResults();
+}
+
+/* ============================================================
+   8) RESULTS — charts, word cloud, legend
+   ============================================================ */
+const chartInstances = {};
+function renderResults(){
+  // legend of who has guessed
+  const legend = document.getElementById('legend');
+  const people = allVotes.filter(v=>v.name);
+  legend.innerHTML = people.length
+    ? people.map(v=>`<span class="chip" style="background:${v.color||'#9CB380'}" title="${escapeHtml(v.name)}">${escapeHtml(v.initials||initialsOf(v.name))}</span> <span class="who">${escapeHtml(v.name)}</span>`).join('&nbsp;&nbsp;')
+    : '';
+
+  const host = document.getElementById('charts');
+  if (!people.length){ host.innerHTML = `<div class="empty">No guesses yet — be the first! 🌱</div>`; return; }
+  host.innerHTML='';
+
+  for (const q of QUESTIONS){
+    const type = CHART_TYPE[q.key];
+    const card = document.createElement('div'); card.className='card chart-card';
+    card.innerHTML = `<h2><span class="emoji">${q.emoji}</span>${escapeHtml(q.label)}</h2>`;
+
+    if (type==='cloud'){
+      const sugg = allVotes.filter(v=>v.nameSuggestion && v.nameSuggestion.trim());
+      const cv = document.createElement('canvas'); cv.id='wordcloud';
+      card.appendChild(cv);
+      const list = document.createElement('ul'); list.className='suggestion-list';
+      list.innerHTML = sugg.map(v=>`<li><span><b>${escapeHtml(v.nameSuggestion)}</b></span><span class="by">— ${escapeHtml(v.name||'')}</span></li>`).join('') || '<li><span class="by">No name ideas yet.</span></li>';
+      card.appendChild(list);
+      host.appendChild(card);
+      drawCloud(cv, sugg.map(v=>v.nameSuggestion.trim()));
+      continue;
+    }
+
+    // tally counts + who picked each option
+    const opts = q.options;
+    const counts = opts.map(o => allVotes.filter(v=>v[q.key]===o).length);
+    const whoBy  = opts.map(o => allVotes.filter(v=>v[q.key]===o).map(v=>v.name).filter(Boolean));
+
+    const wrap = document.createElement('div'); wrap.className='chart-wrap';
+    const cv = document.createElement('canvas'); wrap.appendChild(cv); card.appendChild(wrap);
+
+    // names listed under chart
+    const under = document.createElement('div'); under.className='names-under';
+    under.innerHTML = opts.map((o,i)=> whoBy[i].length ? `<div><b>${escapeHtml(o)}:</b> ${whoBy[i].map(escapeHtml).join(', ')}</div>` : '').join('');
+    card.appendChild(under);
+    host.appendChild(card);
+
+    drawChart(cv, q.key, type, opts, counts, whoBy);
+  }
+}
+
+function optionColors(key, opts){
+  if (key==='gender') return opts.map(o => o==='Boy' ? '#88B2D6' : '#E29AA3');
+  if (key==='eyes')   return opts.map(o => ({Brown:'#8A5A38', Blue:'#88B2D6', Green:'#9CB380'}[o] || '#9CB380'));
+  if (key==='hair')   return ['#7E9A5E','#C9A24B','#BBD4E8'];
+  // ordinal "cluster" gradients pink→blue to keep the gender guessing-game vibe
+  const a=[226,154,163], b=[136,178,214];
+  return opts.map((_,i)=>{ const t=opts.length>1?i/(opts.length-1):0;
+    return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`; });
+}
+
+function drawChart(canvas, key, type, opts, counts, whoBy){
+  if (!window.Chart){ canvas.replaceWith(textFallback(opts,counts)); return; }
+  if (chartInstances[key]) chartInstances[key].destroy();
+  const isPie = type==='pie';
+  chartInstances[key] = new Chart(canvas, {
+    type: isPie ? 'pie' : 'bar',
+    data:{ labels:opts, datasets:[{ data:counts, backgroundColor:optionColors(key,opts),
+      borderRadius: isPie?0:8, borderWidth: isPie?2:0, borderColor:'#FFFDF8' }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:isPie, position:'bottom', labels:{ font:{ family:'Lato' }, color:'#3A2A20', padding:14 } },
+        tooltip:{ callbacks:{ afterLabel:(ctx)=>{ const names=whoBy[ctx.dataIndex]; return names && names.length ? names.join(', ') : ''; } } }
+      },
+      scales: isPie ? {} : {
+        x:{ grid:{ display:false }, ticks:{ font:{ family:'Lato', size:11 }, color:'#6B5648', maxRotation:30, minRotation:0 } },
+        y:{ beginAtZero:true, ticks:{ precision:0, font:{ family:'Lato' }, color:'#6B5648' }, grid:{ color:'#ECE3D2' } }
+      }
+    }
+  });
+}
+
+function drawCloud(canvas, words){
+  const freq = {};
+  words.forEach(w => { const k=w.trim(); if(k) freq[k]=(freq[k]||0)+1; });
+  const list = Object.entries(freq).map(([w,c])=>[w, 14 + c*10]);
+  if (!list.length) return;
+  if (window.WordCloud){
+    WordCloud(canvas, { list, gridSize:8, weightFactor:1.1, fontFamily:'Lato',
+      color:()=> PALETTE[Math.floor(Math.random()*PALETTE.length)], backgroundColor:'transparent', rotateRatio:0.25, drawOutOfBound:false });
+  } else {
+    const div=document.createElement('div'); div.style.textAlign='center'; div.style.padding='10px';
+    div.innerHTML=list.map(([w,s])=>`<span style="font-size:${s}px;margin:6px;color:${PALETTE[w.length%PALETTE.length]};font-weight:700">${escapeHtml(w)}</span>`).join('');
+    canvas.replaceWith(div);
+  }
+}
+
+function textFallback(opts,counts){
+  const d=document.createElement('div'); d.className='names-under';
+  d.innerHTML=opts.map((o,i)=>`<div><b>${escapeHtml(o)}:</b> ${counts[i]}</div>`).join('');
+  return d;
+}
+
+/* ============================================================
+   9) EXPORT TO EXCEL
+   ============================================================ */
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!window.XLSX){ alert('Export library is still loading — try again in a second.'); return; }
+  const labelByKey = {}; QUESTIONS.forEach(q=>labelByKey[q.key]=q.label);
+  const rows = allVotes.filter(v=>v.name).map(v=>{
+    const row = { Name:v.name };
+    QUESTIONS.forEach(q => row[q.label] = v[q.key] || '');
+    if (v.updatedAt) row['Last updated'] = new Date(v.updatedAt).toLocaleString();
+    return row;
+  });
+  if (!rows.length){ alert('No guesses to export yet.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Guesses');
+  XLSX.writeFile(wb, 'baby-kerawala-guesses.xlsx');
+});
+
+/* ============================================================
+   utils
+   ============================================================ */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
