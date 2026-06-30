@@ -424,7 +424,9 @@ function renderIdent(){
   const r = document.getElementById('resetMe');
   if (r) r.addEventListener('click', () => { localStorage.removeItem('bk_voterId'); localStorage.removeItem('bk_voterName'); voterId=null; voterName=null; renderIdent(); openGate(); });
 }
-if (!voterName) openGate(); else renderIdent();
+const PEEK = ['#peek','#mod'].includes(location.hash);
+if (PEEK){ closeGate(); renderIdent(); }
+else if (!voterName) openGate(); else renderIdent();
 
 /* ============================================================
    5) BUILD THE VOTE FORM
@@ -469,7 +471,7 @@ for (const q of QUESTIONS) {
 }
 
 function ensureNamed(fn){ if (!voterName){ openGate(); return; } fn(); }
-function persist(key, value){ if (!voterId) return; store.save(voterId, { name:voterName, initials:initialsOf(voterName), color:colorFor(voterId), [key]:value, updatedAt:Date.now() }); }
+function persist(key, value){ if (PEEK) return; if (!voterId) return; store.save(voterId, { name:voterName, initials:initialsOf(voterName), color:colorFor(voterId), [key]:value, updatedAt:Date.now() }); }
 
 /* ============================================================
    6) LIVE UPDATES
